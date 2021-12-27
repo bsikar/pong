@@ -1,0 +1,15 @@
+[package]
+name = "pong"
+version = "0.1.0"
+authors = ["Brighton Sikarskie <brighton.sikarskie@tuta.io>"]
+readme = "README.md"
+description = " A simple GUI rust pong game"
+repository = "https://github.com/bsikar/pong"
+license = "MIT"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+macroquad = "0.3.13"
+rand = "0.8.4"
