@@ -1,4 +1,3 @@
-use ::rand::{self, Rng};
 use macroquad::prelude::*;
 
 const PADDLE_HEIGHT: f32 = 100.0;
@@ -93,13 +92,11 @@ impl Player {
                     self.y -= PADDLE_SPEED;
                 }
             }
-        } else {
-            if ball.x >= screen_width() / 2.0 {
-                if ball.y > self.y && can_mv_down {
-                    self.y += PADDLE_SPEED;
-                } else if ball.y < self.y && can_mv_up {
-                    self.y -= PADDLE_SPEED;
-                }
+        } else if ball.x >= screen_width() / 2.0 {
+            if ball.y > self.y && can_mv_down {
+                self.y += PADDLE_SPEED;
+            } else if ball.y < self.y && can_mv_up {
+                self.y -= PADDLE_SPEED;
             }
         }
     }
@@ -122,23 +119,36 @@ struct Ball {
     x: f32,
     y: f32,
     rot: f32,
-    rng: rand::rngs::ThreadRng,
 }
 
 impl Ball {
     fn new() -> Self {
         let x = screen_width() / 2.0;
         let y = screen_height() / 2.0;
-        let mut rng = rand::thread_rng();
-        let rot = rng.gen_range(0.0..=360.0);
+        let rot = Ball::new_rot();
 
-        Self { x, y, rot, rng }
+        Self { x, y, rot }
+    }
+
+    fn new_rot() -> f32 {
+        if rand::gen_range(0, 1) == 0 {
+            // generate a random number between 300 and 60
+            let num = rand::gen_range(300.0, 360.0 + 60.0);
+
+            if num > 360.0 {
+                num - 360.0
+            } else {
+                num
+            }
+        } else {
+            rand::gen_range(120.0, 240.0)
+        }
     }
 
     fn rest(&mut self) {
         self.x = screen_width() / 2.0;
         self.y = screen_height() / 2.0;
-        self.rot = self.rng.gen_range(0.0..=360.0);
+        self.rot = Ball::new_rot();
     }
 
     fn draw(&self) {
@@ -148,6 +158,30 @@ impl Ball {
     fn mv(&mut self) {
         self.x += BALL_SPEED * self.rot.to_radians().cos();
         self.y += BALL_SPEED * self.rot.to_radians().sin();
+    }
+
+    fn gen_noise(&mut self) -> f32 {
+        if self.rot >= 0.0 && self.rot <= 90.0 {
+            rand::gen_range(0.0, 10.0)
+        } else if self.rot >= 90.0 && self.rot <= 180.0 {
+            -rand::gen_range(0.0, 10.0)
+        } else if self.rot >= 180.0 && self.rot <= 270.0 {
+            rand::gen_range(0.0, 10.0)
+        } else {
+            -rand::gen_range(0.0, 10.0)
+        }
+    }
+
+    fn rot_add(&mut self, rot: f32) {
+        let noise = self.gen_noise();
+
+        self.rot += rot + noise;
+        if self.rot > 360.0 {
+            self.rot -= 360.0;
+        } else if self.rot < 0.0 {
+            self.rot += 360.0;
+        }
+        assert!(self.rot >= 0.0 && self.rot <= 360.0);
     }
 }
 
@@ -193,7 +227,6 @@ impl Game {
 
     fn mv(&mut self) {
         self.person.player_mv();
-        //self.person.ai_mv(&self.ball);
         self.ai.ai_mv(&self.ball);
         self.ball.mv();
         self.check_collision();
@@ -202,11 +235,11 @@ impl Game {
     fn check_collision(&mut self) {
         // top of the screen
         if self.ball.y - BALL_RADIUS <= 0.0 {
-            self.ball.rot = -self.ball.rot;
+            self.ball.rot_add(-2.0 * self.ball.rot);
         }
         // bottom of the screen
         if self.ball.y + BALL_RADIUS >= screen_height() {
-            self.ball.rot = -self.ball.rot;
+            self.ball.rot_add(-2.0 * self.ball.rot);
         }
         // left of the screen
         if self.ball.x - BALL_RADIUS <= 0.0 {
@@ -224,7 +257,7 @@ impl Game {
             && self.ball.y - BALL_RADIUS <= self.person.y + PADDLE_HEIGHT / 2.0
             && self.ball.y + BALL_RADIUS >= self.person.y - PADDLE_HEIGHT / 2.0
         {
-            self.ball.rot += 180.0;
+            self.ball.rot_add(180.0);
         }
         // right paddle
         if self.ball.x + BALL_RADIUS >= self.ai.x - PADDLE_WIDTH / 2.0
@@ -232,7 +265,7 @@ impl Game {
             && self.ball.y - BALL_RADIUS <= self.ai.y + PADDLE_HEIGHT / 2.0
             && self.ball.y + BALL_RADIUS >= self.ai.y - PADDLE_HEIGHT / 2.0
         {
-            self.ball.rot -= 180.0;
+            self.ball.rot_add(-180.0);
         }
     }
 }
