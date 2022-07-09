@@ -194,6 +194,7 @@ struct Game {
 
 impl Game {
     fn new() -> Self {
+        rand::srand(macroquad::miniquad::date::now() as _);
         let person = Player::new();
         let ai = Player::new_ai();
         let ball = Ball::new();
