@@ -181,7 +181,11 @@ impl Ball {
         } else if self.rot < 0.0 {
             self.rot += 360.0;
         }
-        assert!(self.rot >= 0.0 && self.rot <= 360.0);
+        if self.rot < 0.0 {
+            self.rot = 0.0;
+        } else if self.rot > 360.0 {
+            self.rot = 360.0;
+        }
     }
 }
 
